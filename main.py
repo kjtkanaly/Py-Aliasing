@@ -6,6 +6,7 @@
 import math
 import numpy as np
 import matplotlib.pylab as plt
+import matplotlib.animation as animation
 
 # ----------------------------------------------------------------------------
 def main():
@@ -14,7 +15,7 @@ def main():
     fs = 20
     ts = 1 / fs
     T = 4
-    freqStep = 0.1
+    freqStep = 0.01
     frameRate = 60
     frameDelay = 1 / frameRate
 
@@ -28,11 +29,30 @@ def main():
 
     signal = np.sin(2 * math.pi * time * freqSweep[0])
 
-    plt.scatter(time, signal)
+    fig, ax = plt.subplots()
+    ax.set_ylim([-1, 1])
+    ax.set_xlim([0, T])
+    
+    line, = ax.plot(time, signal, label=str(freqSweep[0]))
+    line.set_marker("o")
+    line.set_color('w')
+    line.set_markeredgecolor('b')
+
+    leg = ax.legend()
+    leg.set_title("Frequency")
+
+    def animate(i):
+        print(len(leg.get_texts()))
+        signal = np.sin(2 * math.pi * time * freqSweep[i])
+        line.set_ydata(signal)
+        leg.get_texts()[0].set_text("test")
+        return line,
+
+    anime = animation.FuncAnimation(
+            fig, animate, interval=frameDelay*1000, blit=True, save_count=50)
+
     plt.show()
 
-    
-
-
+# ----------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
