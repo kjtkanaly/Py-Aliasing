@@ -22,11 +22,19 @@ def nextpow2(n):
 
 # ----------------------------------------------------------------------------
 # Produce 1-Dimensions FFT
-def produce1DFFT(signal, n, fs):
-    frequency = np.linspace(start=int(-fs / 2),
-                            stop=fs / 2,
+def produce1DFFT(signal, n, fs, fftShift):
+    signalFFT = np.fft.fft(a=signal, n=n)
+
+    frequency = np.linspace(start=0,
+                            stop=fs - (fs / n),
                             num=n)
-    signalFFT = np.fft.fftshift(np.fft.fft(a=signal, n=n))
+
+    if fftShift:
+        signalFFT = np.fft.fftshift(signalFFT)
+
+        frequency = np.linspace(start=int(-fs / 2),
+                            stop=(fs / 2) - (fs / n),
+                            num=n)
 
     return signalFFT, frequency
 
@@ -57,39 +65,55 @@ def main():
 
     # Generate the signal FFT frames
     fftSamples = np.power(2, nextpow2(signal.shape[0]))
-    signalFFT = np.zeros([fftSamples, signal.shape[1]])
+    signalFFT = np.zeros([fftSamples, signal.shape[1]],dtype=np.complex_)
 
-    freqAxis = produce1DFFT(signal=signal[:, i], n=fftSamples, fs=fs)[1]
+    fftShift = False
+    freqAxis = produce1DFFT(signal=signal[:, i], 
+                            n=fftSamples, 
+                            fs=fs, 
+                            fftShift=fftShift)[1]
+
+    print(len(freqAxis))
 
     for i in range(signal.shape[1]):
         signalFFT[:, i] = produce1DFFT(signal=signal[:, i], 
                                        n=fftSamples, 
-                                       fs=fs)[0]
+                                       fs=fs,
+                                       fftShift=fftShift)[0]
 
-    # Plot animation
-    fig, ax = plt.subplots()
-    ax.set_ylim([-amplitude, amplitude])
-    ax.set_xlim([0, pulseWidth])
+    # Animation Figure
+    fig, ax = plt.subplots(nrows=2,ncols=1)
+    ax[0].set_ylim([-amplitude, amplitude])
+    ax[0].set_xlim([0, pulseWidth])
+    ax[1].set_ylim([0, 20])
     
-    line, = ax.plot(time, 
+    timeDomainPlot, = ax[0].plot(time, 
                     signal[:, 0], 
                     label=str(round(freqSweep[0] / fs, 2)) + r"$f_{s}$", 
                     zorder=10)
-    line.set_marker("o")
-    line.set_color('b')
-    line.set_markeredgecolor('b')
+    timeDomainPlot.set_marker("o")
+    timeDomainPlot.set_color('b')
+    timeDomainPlot.set_markeredgecolor('b')
 
-    leg = ax.legend(loc=1)
+    leg = ax[0].legend(loc=1)
     leg.set_title("Frequency")
     leg.set_zorder(20)
 
+    freqDomainPlot, = ax[1].plot(freqAxis,
+                      np.abs(signalFFT[:, 0]))                        
+    freqDomainPlot.set_marker("o")
+    freqDomainPlot.set_color('b')
+    freqDomainPlot.set_markeredgecolor('b')
+
     def animate(i):
-        line.set_ydata(signal[:, i])
+        timeDomainPlot.set_ydata(signal[:, i])
         leg.get_texts()[0].set_text(
                            str(round(freqSweep[i] / fs, 2)) + r'$f_{s}$')
         leg.set_zorder(20)
 
-        return line, leg,
+        freqDomainPlot.set_ydata(np.abs(signalFFT[:, i]))
+
+        return timeDomainPlot, leg, freqDomainPlot
 
     anime = animation.FuncAnimation(fig, 
                                     animate, 
