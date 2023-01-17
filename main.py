@@ -8,6 +8,7 @@ import math
 import numpy as np
 import matplotlib.pylab as plt
 import matplotlib.animation as animation
+from matplotlib.animation import PillowWriter
 
 # ----------------------------------------------------------------------------
 # Next Power of 2
@@ -73,19 +74,29 @@ def main():
                             fs=fs, 
                             fftShift=fftShift)[1]
 
-    print(len(freqAxis))
-
     for i in range(signal.shape[1]):
         signalFFT[:, i] = produce1DFFT(signal=signal[:, i], 
                                        n=fftSamples, 
                                        fs=fs,
                                        fftShift=fftShift)[0]
 
+        signalFFT[:, i] = signalFFT[:, i] / np.max(np.abs(signalFFT[:, i]))
+
     # Animation Figure
     fig, ax = plt.subplots(nrows=2,ncols=1)
+    fig.set_size_inches([10, 8])
+
+    # Axis Limits
     ax[0].set_ylim([-amplitude, amplitude])
     ax[0].set_xlim([0, pulseWidth])
-    ax[1].set_ylim([0, 20])
+    ax[1].set_ylim([0, 1])
+    ax[1].set_xlim([0, fs])
+
+    # Axis Labels
+    ax[0].set_xlabel("Time (s)")
+    ax[0].set_ylabel("Amplitude")
+    ax[1].set_xlabel("Frequency (Hz)")
+    ax[1].set_ylabel("Normalized Magnitude")
     
     timeDomainPlot, = ax[0].plot(time, 
                     signal[:, 0], 
@@ -117,12 +128,17 @@ def main():
 
     anime = animation.FuncAnimation(fig, 
                                     animate, 
-                                    interval=frameDelay*1000, 
+                                    interval=frameDelay, 
                                     blit=True, 
                                     save_count=50,
                                     frames=freqSweep.shape[0])
 
-    plt.show()
+    # plt.show()
+
+    writer = PillowWriter(fps=frameRate)
+    anime.save("aliasing.gif", writer=writer)
+    plt.close()
+
 
 # ----------------------------------------------------------------------------
 if __name__ == "__main__":
