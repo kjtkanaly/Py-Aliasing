@@ -50,6 +50,9 @@ def main():
     freqStep = 0.01
     frameRate = 120
     frameDelay = 1 / frameRate
+    normalizeFFT = True
+    displayAnimation = True
+    exportAnimation = False
 
     time = np.linspace(start=0, 
                        stop=(pulseWidth - ts), 
@@ -79,8 +82,11 @@ def main():
                                        n=fftSamples, 
                                        fs=fs,
                                        fftShift=fftShift)[0]
-
-        signalFFT[:, i] = signalFFT[:, i] / np.max(np.abs(signalFFT[:, i]))
+        
+        if normalizeFFT:
+            maxValue = np.max(np.abs(signalFFT[:, i]))
+            if maxValue != 0:
+                signalFFT[:, i] = signalFFT[:, i] / maxValue
 
     # Animation Figure
     fig, ax = plt.subplots(nrows=2,ncols=1)
@@ -128,16 +134,18 @@ def main():
 
     anime = animation.FuncAnimation(fig, 
                                     animate, 
-                                    interval=frameDelay, 
+                                    interval=frameDelay * 1000, 
                                     blit=True, 
                                     save_count=50,
                                     frames=freqSweep.shape[0])
 
-    # plt.show()
+    if displayAnimation:
+        plt.show()
 
-    writer = PillowWriter(fps=frameRate)
-    anime.save("aliasing.gif", writer=writer)
-    plt.close()
+    if exportAnimation:
+        writer = PillowWriter(fps=frameRate)
+        anime.save("aliasing.gif", writer=writer)
+        plt.close()
 
 
 # ----------------------------------------------------------------------------
